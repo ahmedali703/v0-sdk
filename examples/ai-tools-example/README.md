@@ -16,6 +16,22 @@ This example demonstrates how to use `@v0-sdk/ai-tools` with the AI SDK to inter
    ```env
    V0_API_KEY=your_v0_api_key_here
    AI_GATEWAY_API_KEY=your_ai_gateway_api_key_here
+
+   # Optional: Oracle APEX workspace connectivity for the dedicated agent toolkit
+   APEX_BASE_URL=https://your-apex.example.com
+   APEX_WORKSPACE=workspace_alias
+   APEX_AUTH_TYPE=basic # or token
+   APEX_REST_USERNAME=rest_user
+   APEX_REST_PASSWORD=rest_password
+   # If using token auth instead, set APEX_REST_TOKEN
+   # Optional tuning
+   APEX_SCHEMA=workspace_schema
+   APEX_REST_SQL_PATH=/ords/workspace_alias/_/sql
+   APEX_APPLICATION_ID=100
+   APEX_PREVIEW_STYLE=cinematic
+   APEX_COMPONENT_SCRIPT="begin null; end;"
+   APEX_AGENT_PROMPT="Create an interactive dashboard for sales performance"
+   AI_MODEL=openai/gpt-4.1-mini
    ```
 
 3. **Get your API keys:**
@@ -46,6 +62,9 @@ pnpm dev:project
 
 # Advanced agent patterns example
 pnpm dev:agent
+
+# Oracle APEX workspace agent walkthrough (requires Oracle APEX REST Enabled SQL setup)
+pnpm dev:oracle-apex
 ```
 
 **Note**: The full AI integration examples require compatible versions of AI SDK and may have type compatibility issues. Start with the simple example first.

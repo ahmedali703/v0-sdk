@@ -1,57 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { v0Tools, v0ToolsByCategory } from '../src/index'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { v0Tools, v0ToolsByCategory, createOracleApexTools } from '../src/index'
 
-// Mock the v0 SDK
-vi.mock('v0-sdk', () => ({
-  createClient: vi.fn(() => ({
-    chats: {
-      create: vi.fn(),
-      find: vi.fn(),
-      getById: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-      sendMessage: vi.fn(),
-      favorite: vi.fn(),
-      fork: vi.fn(),
-    },
-    projects: {
-      create: vi.fn(),
-      find: vi.fn(),
-      getById: vi.fn(),
-      update: vi.fn(),
-      assign: vi.fn(),
-      getByChatId: vi.fn(),
-      createEnvVars: vi.fn(),
-      findEnvVars: vi.fn(),
-      updateEnvVars: vi.fn(),
-      deleteEnvVars: vi.fn(),
-    },
-    deployments: {
-      create: vi.fn(),
-      find: vi.fn(),
-      getById: vi.fn(),
-      delete: vi.fn(),
-      findLogs: vi.fn(),
-      findErrors: vi.fn(),
-    },
-    user: {
-      get: vi.fn(),
-      getBilling: vi.fn(),
-      getPlan: vi.fn(),
-      getScopes: vi.fn(),
-    },
-    hooks: {
-      create: vi.fn(),
-      find: vi.fn(),
-      getById: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-    rateLimits: {
-      find: vi.fn(),
-    },
-  })),
-}))
+// Mock the v0 SDK (resolved from tests/__mocks__)
+vi.mock('v0-sdk')
 
 describe('@v0-sdk/ai-tools', () => {
   beforeEach(() => {
@@ -195,6 +146,105 @@ describe('@v0-sdk/ai-tools', () => {
       expect(tools.project.createProject).toHaveProperty('description')
       expect(tools.project.createProject).toHaveProperty('inputSchema')
       expect(tools.project.createProject).toHaveProperty('execute')
+    })
+  })
+
+  describe('Oracle APEX tools', () => {
+    const baseConfig = {
+      baseUrl: 'https://apex.example.com',
+      workspace: 'demo_ws',
+      auth: {
+        type: 'basic' as const,
+        username: 'demo',
+        password: 'secret',
+      },
+      defaultApplicationId: 100,
+    }
+
+    const fetchMock = vi.fn()
+
+    beforeEach(() => {
+      fetchMock.mockReset()
+      vi.stubGlobal('fetch', fetchMock)
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('should validate workspace connectivity', async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          items: [
+            {
+              workspace_id: 10,
+              workspace: 'DEMO_WS',
+              last_updated_on: '2024-05-01 10:00:00',
+            },
+          ],
+        }),
+        text: async () => '',
+      })
+
+      const tools = createOracleApexTools(baseConfig)
+      const result = await tools.testWorkspaceConnection.execute()
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(result.workspaceId).toBe(10)
+      expect(result.workspace).toBe('DEMO_WS')
+    })
+
+    it('should build preview timelines with animation metadata', async () => {
+      const tools = createOracleApexTools(baseConfig)
+      const result = await tools.generateOracleApexPreviewPlan.execute({
+        animationStyle: 'cinematic',
+        components: [
+          {
+            type: 'page',
+            identifier: 'dashboard',
+            name: 'Executive Dashboard',
+            previewHtml: '<div>Dashboard Preview</div>',
+          },
+          {
+            type: 'region',
+            identifier: 'sales-region',
+            name: 'Sales Region',
+            previewHtml: '<div>Sales Region</div>',
+          },
+        ],
+      })
+
+      expect(result.timeline).toHaveLength(2)
+      expect(result.preview.html).toContain('Dashboard Preview')
+      expect(result.preview.animationStyle).toBe('cinematic')
+    })
+
+    it('should describe applications with SQL payloads', async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          items: [
+            {
+              application_id: 100,
+              page_id: 1,
+              page_name: 'Dashboard',
+              page_alias: 'DASHBOARD',
+              region_name: 'Sales',
+              region_type: 'Interactive Report',
+              static_id: 'sales-region',
+            },
+          ],
+        }),
+        text: async () => '',
+      })
+
+      const tools = createOracleApexTools(baseConfig)
+      const result = await tools.describeOracleApexApplication.execute({})
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(result.pages).toHaveLength(1)
+      expect(result.pages[0].regions[0].staticId).toBe('sales-region')
     })
   })
 })

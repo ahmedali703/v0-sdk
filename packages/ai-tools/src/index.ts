@@ -125,9 +125,15 @@ export { createProjectTools } from './tools/project-tools'
 export { createDeploymentTools } from './tools/deployment-tools'
 export { createUserTools } from './tools/user-tools'
 export { createHookTools } from './tools/hook-tools'
+export { createOracleApexTools } from './tools/oracle-apex-tools'
 
 // Export types
 export type { V0ToolsConfig } from './types'
+export type {
+  OracleApexTools,
+  OracleApexToolsConfig,
+  OracleApexAuthConfig,
+} from './tools/oracle-apex-tools'
 
 // Default export
 export default v0Tools
