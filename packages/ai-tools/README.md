@@ -2,7 +2,7 @@
 
 > **⚠️ Developer Preview**: This SDK is currently in beta and is subject to change. Use in production at your own risk.
 
-AI SDK tools for the v0 Platform API. This package provides a comprehensive collection of tools that can be used with the AI SDK to interact with v0's API endpoints, enabling AI agents to create, manage, and deploy v0 projects and chats.
+AI SDK tools for the v0 Platform API. This package provides a comprehensive collection of tools that can be used with the AI SDK to interact with v0's API endpoints, enabling AI agents to create, manage, and deploy v0 projects and chats. It also ships with opinionated agent tooling for Oracle APEX workspaces so that you can orchestrate full end-to-end APEX application builds from the same AI runtime.
 
 ## Requirements
 
@@ -106,6 +106,42 @@ const result = await generateText({
 })
 ```
 
+### Oracle APEX Agent Toolkit
+
+```typescript
+import { createOracleApexTools } from '@v0-sdk/ai-tools'
+
+const oracleApexTools = createOracleApexTools({
+  baseUrl: process.env.APEX_BASE_URL!,
+  workspace: process.env.APEX_WORKSPACE!,
+  auth: {
+    type: 'basic',
+    username: process.env.APEX_REST_USERNAME!,
+    password: process.env.APEX_REST_PASSWORD!,
+  },
+  defaultApplicationId: 100,
+})
+
+const result = await generateText({
+  model: 'openai/gpt-4',
+  prompt: 'Create an interactive dashboard in Oracle APEX',
+  tools: {
+    ...oracleApexTools,
+  },
+})
+```
+
+The Oracle APEX toolkit uses REST Enabled SQL to authenticate against a workspace, introspect applications, execute PL/SQL build scripts, and produce rich preview timelines that you can render back to users with cinematic animation.
+
+To try the toolkit end-to-end, install dependencies at the repo root and run the dedicated example:
+
+```bash
+pnpm install
+pnpm --filter ai-tools-example dev:oracle-apex
+```
+
+Populate the environment variables documented in `examples/ai-tools-example/README.md` (e.g. `APEX_BASE_URL`, `APEX_WORKSPACE`, and REST credentials) so the script can connect to your workspace.
+
 ## Available Tools
 
 ### Chat Tools (`tools.chat`)
@@ -166,6 +202,16 @@ const result = await generateText({
 | `updateHook` | Update properties of an existing webhook |
 | `deleteHook` | Delete an existing webhook               |
 | `listHooks`  | List all webhooks                        |
+
+### Oracle APEX Tools (`createOracleApexTools`)
+
+| Tool                             | Description                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------- |
+| `testWorkspaceConnection`        | Validate credentials against an APEX workspace and return workspace metadata.               |
+| `listOracleApexApplications`     | Enumerate applications inside the workspace so the agent can pick the correct target app.   |
+| `describeOracleApexApplication`  | Generate a structured blueprint of pages and regions for downstream reasoning.              |
+| `applyOracleApexComponentScript` | Execute PL/SQL/SQL scripts (APEX APIs, DDL, etc.) that create or update application pieces. |
+| `generateOracleApexPreviewPlan`  | Build a timeline describing high-fidelity preview animations for newly generated UI.        |
 
 ## Configuration
 
